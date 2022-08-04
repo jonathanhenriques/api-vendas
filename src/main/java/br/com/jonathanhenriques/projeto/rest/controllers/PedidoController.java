@@ -1,19 +1,29 @@
-package br.com.jonathanhenriques.projeto.controllers;
+package br.com.jonathanhenriques.projeto.rest.controllers;
 
 import br.com.jonathanhenriques.projeto.domain.entity.Cliente;
+import br.com.jonathanhenriques.projeto.domain.entity.ItemPedido;
 import br.com.jonathanhenriques.projeto.domain.entity.Pedido;
 import br.com.jonathanhenriques.projeto.domain.repository.ClienteRepository;
 import br.com.jonathanhenriques.projeto.domain.repository.PedidoRepository;
-import br.com.jonathanhenriques.projeto.dto.PedidoDTO;
+import br.com.jonathanhenriques.projeto.rest.dto.InformacaoItemPedidoDTO;
+import br.com.jonathanhenriques.projeto.rest.dto.InformacoesPedidoDTO;
+import br.com.jonathanhenriques.projeto.rest.dto.PedidoDTO;
 import br.com.jonathanhenriques.projeto.service.PedidoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/pedidos")
@@ -30,12 +40,48 @@ public class PedidoController {
     private PedidoService service;
 
 
-
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Integer id) {
         return pedidoRepository.findById(id)
                 .map(p -> ResponseEntity.ok(pedidoRepository.findById(id)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+
+    @GetMapping("/fetch/{id}")
+    public InformacoesPedidoDTO getByIdFetchItens(@PathVariable Integer id) {
+        return service
+                .obterPedidoCompleto(id)
+                .map(p -> converterPedido(p))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido não encontrado."));
+    }
+
+    private InformacoesPedidoDTO converterPedido(Pedido pedido) {
+       //build() método criado pelo lombok funciona como uma instância de obj
+        return InformacoesPedidoDTO
+                .builder()
+                .id(pedido.getId())
+                .dataPedido(pedido.getDataPedido().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                .cpf(pedido.getCliente().getCpf())
+                .nomeCliente(pedido.getCliente().getNome())
+                .total(pedido.getTotal())
+                .items(converterLista(pedido.getItens()))
+                .build();
+
+    }
+
+    private List<InformacaoItemPedidoDTO> converterLista(List<ItemPedido> itens) {
+        if(CollectionUtils.isEmpty(itens)){
+            return Collections.emptyList();
+        }
+
+        return itens
+                .stream()
+                .map( i -> InformacaoItemPedidoDTO.builder().descricaoProduto(i.getProduto().getDescricao())
+                        .quantidade(i.getQuantidade())
+                        .build())
+                .collect(Collectors.toList());
+
     }
 
     @GetMapping("/cliente/{cliente}")
@@ -69,12 +115,11 @@ public class PedidoController {
     }
 
     @PostMapping
-    public Integer postPedido(@RequestBody PedidoDTO dto) {
-        Pedido pedido = (service.postPedido(dto)).getBody();
+    @ResponseStatus(HttpStatus.CREATED)
+    public Integer postProduto(@RequestBody @Valid PedidoDTO dto) {
+        Pedido pedido = service.postPedido(dto);
         return pedido.getId();
     }
-
-
 
 
     @PutMapping

@@ -1,4 +1,4 @@
-package br.com.jonathanhenriques.projeto.dto;
+package br.com.jonathanhenriques.projeto.rest.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

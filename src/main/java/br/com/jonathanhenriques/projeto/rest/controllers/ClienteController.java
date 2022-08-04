@@ -1,4 +1,4 @@
-package br.com.jonathanhenriques.projeto.controllers;
+package br.com.jonathanhenriques.projeto.rest.controllers;
 
 import br.com.jonathanhenriques.projeto.domain.entity.Cliente;
 import br.com.jonathanhenriques.projeto.domain.repository.ClienteRepository;

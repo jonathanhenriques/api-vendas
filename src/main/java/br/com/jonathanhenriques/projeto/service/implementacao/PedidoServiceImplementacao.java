@@ -8,23 +8,15 @@ import br.com.jonathanhenriques.projeto.domain.repository.ClienteRepository;
 import br.com.jonathanhenriques.projeto.domain.repository.ItemsPedidoRepository;
 import br.com.jonathanhenriques.projeto.domain.repository.PedidoRepository;
 import br.com.jonathanhenriques.projeto.domain.repository.ProdutoRepository;
-import br.com.jonathanhenriques.projeto.dto.ItemPedidoDTO;
-import br.com.jonathanhenriques.projeto.dto.PedidoDTO;
 import br.com.jonathanhenriques.projeto.exception.RegraNegocioException;
+import br.com.jonathanhenriques.projeto.rest.dto.ItemPedidoDTO;
+import br.com.jonathanhenriques.projeto.rest.dto.PedidoDTO;
 import br.com.jonathanhenriques.projeto.service.PedidoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.swing.text.html.Option;
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,50 +40,56 @@ public class PedidoServiceImplementacao implements PedidoService {
 
     @Override
     @Transactional
-    public ResponseEntity<Pedido> postPedido(@RequestBody PedidoDTO dto) {
+    public Pedido postPedido(PedidoDTO dto) {
+        Integer idCliente = dto.getCliente();
+        Cliente cliente = clienteRepository
+                .findById(idCliente)
+                .orElseThrow(() -> new RegraNegocioException("Código de cliente inválido."));
+
         Pedido pedido = new Pedido();
+        pedido.setTotal(dto.getTotal());
+        pedido.setDataPedido(LocalDate.now());
+        pedido.setCliente(cliente);
+//        pedido.setStatus(StatusPedido.REALIZADO);
 
-        if (clienteRepository.findById(dto.getCliente()).isPresent()) {
-            Cliente cliente = clienteRepository
-                    .findById(dto.getCliente())
-                    .orElseThrow(
-                            () -> new RegraNegocioException("código de cliente inválido"));
-            LocalDate data = LocalDate.now();
-            BigDecimal total = dto.getTotal();
-            List<ItemPedido> itemsPedidos = converterListaItens(pedido, dto.getItens());
-            pedidoRepository.save(pedido);
-            itensPedidoRepository.saveAll(itemsPedidos);
+        List<ItemPedido> itemsPedido = converterItems(pedido, dto.getItens());
+        pedidoRepository.save(pedido);
+        itensPedidoRepository.saveAll(itemsPedido);
+        pedido.setItens(itemsPedido);
+        return pedido;
+    }
 
-            pedido.setCliente(cliente);
-            pedido.setDataPedido(data);
-            pedido.setTotal(total);
-            pedido.setItens(itemsPedidos);
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(pedido);
-        }
-        return ResponseEntity.badRequest().build();
+    @Override
+    public Optional<Pedido> obterPedidoCompleto(Integer id) {
+        return pedidoRepository.findByIdFetchItens(id);
     }
 
 
-    private List<ItemPedido> converterListaItens(Pedido pedido, List<ItemPedidoDTO> itens) {
-        if (itens.isEmpty()) {
-            throw new RegraNegocioException("Não existem itens para realizar o pedido!");
+    private List<ItemPedido> converterItems(Pedido pedido, List<ItemPedidoDTO> items){
+        if(items.isEmpty()){
+            throw new RegraNegocioException("Não é possível realizar um pedido sem items.");
         }
 
-        return itens.stream().map(dto -> {
-            Integer idProduto = dto.getProduto();
-            Produto produto = produtoRepository
-                    .findById(idProduto)
-                    .orElseThrow(
-                            () -> new RegraNegocioException("código de cliente inválido: " + idProduto));
+        return items
+                .stream()
+                .map( dto -> {
+                    Integer idProduto = dto.getProduto();
+                    Produto produto = produtoRepository
+                            .findById(idProduto)
+                            .orElseThrow(
+                                    () -> new RegraNegocioException(
+                                            "Código de produto inválido: "+ idProduto
+                                    ));
 
-            ItemPedido itemPedido = new ItemPedido();
-            itemPedido.setQuantidade(dto.getQuantidade());
-            itemPedido.setPedido(pedido);
-            itemPedido.setProduto(produto);
-            return itemPedido;
+                    ItemPedido itemPedido = new ItemPedido();
+                    itemPedido.setQuantidade(dto.getQuantidade());
+                    itemPedido.setPedido(pedido);
+                    itemPedido.setProduto(produto);
+                    return itemPedido;
+                }).collect(Collectors.toList());
 
-        }).collect(Collectors.toList());
     }
+
+
 
 }

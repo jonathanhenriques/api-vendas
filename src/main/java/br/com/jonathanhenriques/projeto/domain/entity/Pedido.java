@@ -1,5 +1,6 @@
 package br.com.jonathanhenriques.projeto.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,7 @@ public class Pedido {
 
     @ManyToOne
     @JoinColumn(name = "cliente_id")
+    @JsonIgnoreProperties(value = "pedidos")
     private Cliente cliente;
 
     @Column(name = "data_pedido")
@@ -33,6 +35,7 @@ public class Pedido {
     private BigDecimal total;
 
     @OneToMany(mappedBy = "pedido")
+    @JsonIgnoreProperties(value = "pedido")
     private List<ItemPedido> itens;
 
     public List<ItemPedido> getItens() {

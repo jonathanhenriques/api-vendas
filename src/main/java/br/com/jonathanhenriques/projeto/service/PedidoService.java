@@ -1,11 +1,17 @@
 package br.com.jonathanhenriques.projeto.service;
 
 import br.com.jonathanhenriques.projeto.domain.entity.Pedido;
-import br.com.jonathanhenriques.projeto.dto.PedidoDTO;
+import br.com.jonathanhenriques.projeto.rest.dto.PedidoDTO;
 import org.springframework.http.ResponseEntity;
+
+import java.util.Optional;
 
 public interface PedidoService {
 
-    ResponseEntity<Pedido> postPedido(PedidoDTO dto);
+    Pedido postPedido(PedidoDTO dto);
+
+    Optional<Pedido> obterPedidoCompleto(Integer id);
+
+//    void atualizaStatus(Integer id, StatusPedido statusPedido);
 
 }

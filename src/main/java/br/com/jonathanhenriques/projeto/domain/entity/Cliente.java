@@ -1,5 +1,6 @@
 package br.com.jonathanhenriques.projeto.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,7 +29,7 @@ public class Cliente {
     private String email;
 
     @OneToMany(mappedBy = "cliente" /*, fetch = FetchType.LAZY*//*, cascade = CascadeType.REMOVE*/)
-//    @JsonIgnore
+    @JsonIgnoreProperties(value = "cliente")
     private Set<Pedido> pedidos;
 
 
