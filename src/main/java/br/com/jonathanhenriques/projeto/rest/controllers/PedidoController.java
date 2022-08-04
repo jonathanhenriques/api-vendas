@@ -69,9 +69,9 @@ public class PedidoController {
     }
 
     @PostMapping
-    public Integer postPedido(@RequestBody PedidoDTO dto){
-        ResponseEntity<Pedido> pedido = service.postPedido(dto);
-        return pedido.getBody().getId();
+    public Integer postPedido(@RequestBody PedidoDTO dto) {
+        Pedido pedido = (service.postPedido(dto)).getBody();
+        return pedido.getId();
     }
 
 
